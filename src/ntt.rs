@@ -91,26 +91,34 @@ pub fn init_ntt() {
 * Arguments:   - int16_t r[256]: pointer to input/output vector of elements
 *                                of Zq
 **************************************************/
-    pub fn ntt(r: &mut Vec<i16>) {
-        let mut k = 1;
-        let mut t;
-        let mut zeta;
+pub fn ntt(r: &mut Vec<i16>) {
+    let mut k = 1;
+    let mut t;
+    let mut zeta;
 
-        for len in (2..=128).rev().step_by(2) {
-            for start in (0..256).step_by(len) {
-                zeta = ZETAS[k];
-                k += 1;
+    let mut len = 128;
+    while len >= 2 {
+        let mut start = 0;
+        while start < 256 {
+            zeta = ZETAS[k];
+            k += 1;
 
-                for j in start..(start + len) {
-                    let a_send = zeta;
-                    let b_send = r[j + len].clone();
-                    t = fqmul(a_send, b_send);
+            for j in start..start + len {
+                // Make sure we don't access out of bounds
+                if j + len < r.len() {
+                    t = fqmul(zeta, r[j + len]);
                     r[j + len] = r[j] - t;
                     r[j] = r[j] + t;
                 }
             }
+
+            start += len * 2;
         }
+        len >>= 1; // Equivalent to len /= 2
     }
+}
+
+
 
     /*************************************************
 * Name:        invntt_tomont

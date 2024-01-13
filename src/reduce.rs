@@ -15,10 +15,10 @@ pub mod reduce
     pub fn montgomery_reduce(a: i32) -> i16 {
         let kyber_q: u32 = crate::get_env_var("KYBER_Q").unwrap();
             let mut t: i32;
-            let mut u: i32;
+            let mut u: i16;
 
-            u = a * 62209; //QINV;
-            t = (u) * kyber_q as i32;
+            u = (a.wrapping_mul(62209)) as i16; // QINV;
+            t = ((u as u32).wrapping_mul(kyber_q)) as i32;
             t = a - t;
             t >>= 16;
 
