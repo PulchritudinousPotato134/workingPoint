@@ -321,12 +321,15 @@ pub mod indcpa
     
         gen_matrix(&mut a, &mut publicseed, false);
     
+        let noise_copy = buf[32..].to_vec();
         for i in 0..kyber_k {
-            poly::poly::poly_getnoise_eta1(&mut skpv.vec[i as usize], &noiseseed, nonce);
+            let mut x = skpv.vec[i as usize].clone(); 
+            poly::poly::poly_getnoise_eta1(&mut x, &noise_copy, nonce);
+            skpv.vec[i as usize] = x;
             nonce += 1;
         }
         for i in 0..kyber_k {
-            poly::poly::poly_getnoise_eta1(&mut e.vec[i as usize], &noiseseed, nonce);
+            poly::poly::poly_getnoise_eta1(&mut e.vec[i as usize], &noise_copy, nonce);
             nonce += 1;
         }
     

@@ -48,11 +48,13 @@ pub mod symmetric_shake {
 
             for i in  0..kyber_symbytes
             {
-                extkey[i as usize] = key[i as usize];
-                extkey[i as usize] = nonce;
+                extkey[i as usize] = key[i as usize];        
+            }
+            let len = extkey.len() - 1;
+                extkey[len] = nonce;
 
                 crate::fips202::fips202::shake256(out, out.len(), &extkey);
-            }
+    
         
     }
 }

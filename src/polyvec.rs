@@ -183,7 +183,10 @@ pub mod polyvec
     pub fn polyvec_ntt(r: &mut crate::polyvec_struct::PolyVec) {
         let kyber_k: u32 = crate::get_env_var("KYBER_K").unwrap();
             for i in 0..kyber_k {
-                crate::poly::poly::poly_ntt(&mut r.vec[i as usize]);
+                let mut x: crate::poly_struct::PolyStruct =  r.vec[i as usize].clone();
+                crate::poly::poly::poly_ntt(&mut x);//&mut r.vec[i as usize]);
+                r.vec[i as usize] = x;
+
             }
         
     }

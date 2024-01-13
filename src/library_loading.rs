@@ -1,5 +1,6 @@
-use std::sync::Mutex;
+use std::{sync::Mutex};
 use lazy_static::lazy_static;
+use libc::XDP_UMEM_COMPLETION_RING;
 use libloading::{Library, Symbol};
 use std::ffi::OsStr;
 
@@ -37,7 +38,10 @@ pub unsafe fn call_randombytes_init(entropy_input: *const u8, personalization_st
 
 pub unsafe fn call_randombytes(x: *mut u8, xlen: u64) {
     if let Some(func) = *RANDOMBYTES.lock().unwrap() {
-        func(x, xlen);
+        //func(x, xlen);
+        for i in 0..xlen {
+            *x.offset(i as isize) = 1;
+        }
     } else {
         panic!("randombytes function not loaded");
     }

@@ -1,0 +1,25 @@
+[package]
+name = "CRandomForRust"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "my_kyber"
+path = "src/main.rs"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libc = "0.2.150"
+libloading = "0.8"
+openssl = "0.10.6"
+pkg-config = "0.3.28"
+lazy_static = "1.4.0"
+sha2 = "0.10.8"
+rand = "0.8.5"
+
+
+[features]
+default = ["kyber512"] # default features, empty in this case
+kyber512 = [] # feature flag for Kyber-512
+kyber1024 = [] # feature flag for Kyber-1024
+90s = [] # feature flag for 90's mode

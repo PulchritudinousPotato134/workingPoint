@@ -91,7 +91,7 @@ pub fn init_ntt() {
 * Arguments:   - int16_t r[256]: pointer to input/output vector of elements
 *                                of Zq
 **************************************************/
-    pub fn ntt(r: &mut [i16]) {
+    pub fn ntt(r: &mut Vec<i16>) {
         let mut k = 1;
         let mut t;
         let mut zeta;
@@ -100,8 +100,11 @@ pub fn init_ntt() {
             for start in (0..256).step_by(len) {
                 zeta = ZETAS[k];
                 k += 1;
+
                 for j in start..(start + len) {
-                    t = fqmul(zeta, r[j + len]);
+                    let a_send = zeta;
+                    let b_send = r[j + len].clone();
+                    t = fqmul(a_send, b_send);
                     r[j + len] = r[j] - t;
                     r[j] = r[j] + t;
                 }
