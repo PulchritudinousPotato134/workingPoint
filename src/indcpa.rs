@@ -16,9 +16,9 @@ pub mod indcpa
     use crate::{poly, poly_struct, polyvec_struct, get_env_var};
     use crate::xof_state::XofAbsorb;
 
-    pub fn pack_pk(r: &mut [u8], pk: &polyvec_struct::PolyVec, seed: &[u8]) {
+    pub fn pack_pk(r: &mut [u8], pk: & mut polyvec_struct::PolyVec, seed: &[u8]) {
         let kyber_symbytes: u32 = crate::get_env_var("KYBER_SYMBYTES").unwrap();
-        let kyber_polyvecbytes: usize = crate::get_env_var("KYBER_polyvecbytes").unwrap();
+        let kyber_polyvecbytes: usize = crate::get_env_var("KYBER_POLYVECBYTES").unwrap();
             crate::polyvec::polyvec::polyvec_tobytes(r, pk);
             for i in 0..kyber_symbytes {
                 r[i as usize + kyber_polyvecbytes] = seed[i as usize];
@@ -55,7 +55,7 @@ pub mod indcpa
     * Arguments:   - uint8_t *r:  pointer to output serialized secret key
     *              - polyvec *sk: pointer to input vector of polynomials (secret key)
     **************************************************/
-    pub fn pack_sk(r: &mut [u8], sk: &polyvec_struct::PolyVec) {
+    pub fn pack_sk(r: &mut [u8], sk: & mut polyvec_struct::PolyVec) {
         crate::polyvec::polyvec::polyvec_tobytes(r, sk);
     }
     /*************************************************
@@ -346,8 +346,8 @@ pub mod indcpa
         crate::polyvec::polyvec::polyvec_add(&mut pkpv, &pkpv_temp, &e);
         crate::polyvec::polyvec::polyvec_reduce(&mut pkpv);
     
-        pack_sk(sk, &skpv);
-        pack_pk(pk, &pkpv, &publicseed);
+        pack_sk(sk, &mut skpv);
+        pack_pk(pk, &mut pkpv, &publicseed);
     }
     
 

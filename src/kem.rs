@@ -112,7 +112,9 @@ pub mod kem{
             crate::indcpa::indcpa::indcpa_keypair(pk, sk);
 
             // Copy data from pk to sk
-            sk[kyber_i_secret..].copy_from_slice(&pk[..kyber_i_public]);
+            for i in 0..kyber_i_public {
+                sk[kyber_i_secret + i] = pk[i];
+            }
 
             // Calculate hash_h(sk + kyber_secretkeybytes - 2 * kyber_symbytes, pk, kyber_publickeybytes)
             if sk.len() >= kyber_secret - 2 * kyber_sym + 32 {

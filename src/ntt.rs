@@ -116,6 +116,7 @@ pub fn ntt(r: &mut Vec<i16>) {
         }
         len >>= 1; // Equivalent to len /= 2
     }
+    
 }
 
 

@@ -36,18 +36,15 @@ pub mod reduce
 *
 * Returns:     integer in {0,...,q} congruent to a modulo q.
 **************************************************/
-    pub fn barrett_reduce(a: i16) -> i16 {
-        let kyber_q: u32 = crate::get_env_var("KYBER_Q").unwrap();
-        
-            let v: i16 = ((1i32 << 26) + (kyber_q as i32/ 2) ) as i16;
-            let mut t: i32;
+pub fn barrett_reduce(a: i16) -> i16 {
+    let kyber_q: u32 = crate::get_env_var("KYBER_Q").unwrap();
+    let v: i32 = (((1 << 26) + (kyber_q / 2)) / kyber_q).try_into().unwrap();
 
-            t = ((v as i32) * (a as i32)) >> 26;
-            t *= kyber_q as i32;
+    let mut t: i32 = (v * (a as i32)) >> 26;
+    t *= kyber_q as i32;
 
-            return a - t as i16;
-      
-    }
+    (a - t as i16) as i16
+}
 
 
     /*************************************************

@@ -140,14 +140,13 @@ pub mod polyvec
     *                            (needs space for KYBER_POLYVECBYTES)
     *              - polyvec *a: pointer to input vector of polynomials
     **************************************************/
-    pub fn polyvec_tobytes(r: &mut [u8], a: &crate::polyvec_struct::PolyVec) {
+    pub fn polyvec_tobytes(r: &mut [u8], a: &mut crate::polyvec_struct::PolyVec) {
         let kyber_k: u32 = crate::get_env_var("KYBER_K").unwrap();
         let kyber_polybytes: u32 = crate::get_env_var("KYBER_POLYBYTES").unwrap();
+        let range:u32 = kyber_polybytes;
             let mut i = 0;
-            for j in 0..kyber_k {
-                let mut temp_poly = a.vec[j as usize].clone(); // Clone the PolyStruct
-                crate::poly::poly::poly_tobytes(&mut r[i..], &mut temp_poly);
-                i += kyber_polybytes as usize;
+            for i in 0..kyber_k {
+                crate::poly::poly::poly_tobytes(&mut r[(i * range) as usize..], &mut a.vec[i as usize]);
             }
         
     }
