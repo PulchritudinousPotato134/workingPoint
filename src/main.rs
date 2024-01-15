@@ -66,9 +66,13 @@ fn main() {
 
         let mut private_key = vec![0u8; kyber.params.kyber_secretkeybytes as usize];
         let mut public_key = vec![0u8; kyber.params.kyber_publickeybytes as usize];
+        let start = std::time::Instant::now();
         kem::kem::crypto_kem_keypair(&mut public_key, &mut private_key).expect("Key pair generation failed");
         println!("Public Key: {:?}", public_key);
         println!("Private Key: {:?}", private_key);
+        let duration = start.elapsed();
+        println!("Time elapsed in expensive_function() is: {:?}", duration)
+
     //confirmed!
     // Print the generated random bytes
 }

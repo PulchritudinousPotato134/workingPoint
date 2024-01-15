@@ -28,21 +28,11 @@
  * Returns the loaded 64-bit unsigned integer
  **************************************************/
  fn load64(x: &[u8]) -> u64 {
-    println!("Input bytes:");
-    for &byte in x.iter() {
-        print!("{:02x} ", byte);
-    }
-    println!();
-
     let mut r = 0u64;
     for (i, &byte) in x.iter().enumerate() {
         let shifted = (byte as u64).wrapping_shl(8 * i as u32);
-        println!("Byte {} (0x{:02x}) shifted: 0x{:016x}", i, byte, shifted);
         r |= shifted;
-        println!("Intermediate result: 0x{:016x}", r);
     }
-
-    println!("Final result: 0x{:016x}", r);
     r
 }
  /*************************************************
