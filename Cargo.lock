@@ -13,6 +13,7 @@ dependencies = [
  "pkg-config",
  "rand",
  "sha2",
+ "tick_counter",
 ]
 
 [[package]]
@@ -257,6 +258,12 @@ dependencies = [
  "quote",
  "unicode-ident",
 ]
+
+[[package]]
+name = "tick_counter"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37f1310986d0aa940019cbb2b480161c60a614dba076cbb20e82bfbc236bbabd"
 
 [[package]]
 name = "typenum"
