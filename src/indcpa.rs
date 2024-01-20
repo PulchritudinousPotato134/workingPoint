@@ -285,8 +285,10 @@ pub mod indcpa
         let mut pkpv = polyvec_struct::PolyVec::new();
         let mut skpv = polyvec_struct::PolyVec::new();
     
-        unsafe {
-            crate::library_loading::call_randombytes(publicseed.as_mut_ptr(), kyber_symbytes as u64);
+
+        {
+            let mut rng = crate::GLOBAL_RANDOM.lock().unwrap();
+            rng.randombytes(&mut publicseed, kyber_symbytes as u64);
         }
 
         for i in 0..publicseed.len()

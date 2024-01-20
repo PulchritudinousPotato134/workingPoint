@@ -127,12 +127,10 @@ pub mod kem{
                 return Err(());
             }
 
-
-                   let sk_ptr = sk[kyber_i_secret - kyber_sym..].as_mut_ptr();
-                unsafe{
-                   crate::library_loading::call_randombytes(sk_ptr, kyber_sym as u64);
+                {
+                    let mut rng = crate::GLOBAL_RANDOM.lock().unwrap();
+                    rng.randombytes(&mut sk[kyber_i_secret - kyber_sym..].to_vec(), kyber_sym as u64);
                 }
-
 
              return Ok(());
 
@@ -149,8 +147,11 @@ pub mod kem{
 
             // Generate random data into buf
 
-            let buf_ptr = buf[..kyber_symbytes].as_mut_ptr();
-           unsafe { crate::library_loading::call_randombytes(buf_ptr, kyber_symbytes as u64) };
+           {
+               let mut rng = crate::GLOBAL_RANDOM.lock().unwrap();
+               rng.randombytes(&mut buf[..kyber_symbytes].to_vec(), kyber_symbytes as u64);
+           }
+
             // Hash buf (first half) and store the result in the same buffer
             let mut buf_array_32: [u8; 32] = buf[..32].try_into().expect("Slice with incorrect length");
             hash_function.hash_h(&mut buf_array_32, &buf[..kyber_symbytes]);

@@ -105,7 +105,8 @@ pub struct Kyber {
 }
 
 impl Kyber {
-        pub fn create(security_level: u32) -> Kyber {
+        pub fn create(security_level: u32) -> Kyber 
+        {
             let params = KyberParams::set_parameters(security_level).expect("Invalid security level");
     
             let mut kyber_instance = Kyber {
@@ -138,10 +139,11 @@ impl Kyber {
         }
     
         let mut random_bytes = vec![0u8; num_bytes];
-        let rb_ptr = random_bytes.as_mut_ptr();
-        unsafe {
-        let result = crate::library_loading::call_randombytes(rb_ptr, num_bytes as u64);
+        {
+            let mut rng = crate::GLOBAL_RANDOM.lock().unwrap();
+            rng.randombytes(&mut random_bytes, num_bytes as u64);
         }
+
 
 
         random_bytes
@@ -150,7 +152,8 @@ impl Kyber {
 
 
 
-    fn do_generate_key_pair(&mut self) -> (Vec<u8>, Vec<u8>) {
+    fn do_generate_key_pair(&mut self) -> (Vec<u8>, Vec<u8>) 
+    {
         // Generate random bytes for the private key
         let private_bytes = self.generate_random_bytes(true, self.params.kyber_secretkeybytes as usize);
 
@@ -173,7 +176,8 @@ impl Kyber {
     }
 
     
-    fn generate_outside_key_pair(&mut self, strength: u32) -> (Vec<u8>, Vec<u8>) {
+    fn generate_outside_key_pair(&mut self, strength: u32) -> (Vec<u8>, Vec<u8>) 
+    {
         let (private_bytes, public_bytes): (Vec<u8>, Vec<u8>);
         
         if strength == 2 {
@@ -199,7 +203,8 @@ impl Kyber {
     }
     
 
-    pub fn generate_key_pair(&mut self) {
+    pub fn generate_key_pair(&mut self) 
+    {
         if self.has_key_been_generated {
             let resp = helping_functions::helping_functions::ask_general_yes_or_no(
                 "You have already generated a key pair.\nAre you sure you want to generate a new one?",
@@ -228,7 +233,8 @@ impl Kyber {
     }
     
 
-    pub fn generate_external_key_pair(&mut self) -> (Vec<u8>, Vec<u8>) {
+    pub fn generate_external_key_pair(&mut self) -> (Vec<u8>, Vec<u8>) 
+    {
         let (mut pub_key, mut priv_key);
     
         loop {
@@ -251,21 +257,24 @@ impl Kyber {
     }
     
 
-    pub fn encrypt(&self, plaintext: &[u8]) -> Result<Vec<u8>, i32> {
+    pub fn encrypt(&self, plaintext: &[u8]) -> Result<Vec<u8>, i32> 
+    {
         // Implement the encryption logic here
         // You can use self.params to access the Kyber parameters
         // Return the ciphertext or an error
         Err(-1)
     }
 
-    pub fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, i32> {
+    pub fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, i32> 
+    {
         // Implement the decryption logic here
         // You can use self.params to access the Kyber parameters
         // Return the plaintext or an error
         Err(-1)
     }
 
-    pub fn get_private_key(&mut self) {
+    pub fn get_private_key(&mut self) 
+    {
         println!("The private key is protected.");
         println!("In order to see it, please enter your private key password:");
         println!("WARNING! If you enter your password incorrectly 3 times in a row, the key will be deleted!");
@@ -298,12 +307,19 @@ impl Kyber {
     pub fn test_encryption_with_seed(&mut self) {
         println!("Please enter the seed value:");
         let seed = helping_functions::helping_functions::get_seed_input();
+        let ps: u8 = 0;
 
-        let seed_ptr = seed.as_ptr();
-        let ps: u8 = 0; 
-    unsafe{
-        let result = crate::library_loading::call_randombytes_init(seed_ptr, &ps, 256); 
-    }
+        let personalization_string: Option<Vec<u8>> = if ps == 0 {
+            None
+        } else {
+            Some(vec![ps])
+        };
+
+        {
+            let mut rng = crate::GLOBAL_RANDOM.lock().unwrap();
+            rng.randombytes_init(seed, personalization_string, 256);
+        }
+
         let mut private_key = vec![0u8; self.params.kyber_secretkeybytes as usize];
         let mut public_key = vec![0u8; self.params.kyber_publickeybytes as usize];
         kem::kem::crypto_kem_keypair(&mut public_key, &mut private_key).expect("Key pair generation failed");

@@ -5,10 +5,8 @@ use std::os::unix::ffi::OsStrExt;
 use std::io;
 use libloading::{Library, Symbol};
 extern crate  pkg_config;
-mod library_loading;
 use std::ptr;
-extern crate lazy_static;
-
+use lazy_static::lazy_static;
 
 extern crate sha2;
 use std::sync::Mutex;
@@ -17,7 +15,6 @@ use std::io::{BufRead, Read};
 use std::io::{Write};
 mod kem;
 mod kyber;
-mod rng;
 mod xof_state;
 mod kyber_rng;
 mod speed_print;
@@ -38,22 +35,13 @@ mod ntt;
 mod symmetric_shake;
 use tick_counter::TickCounter;
 
+
+lazy_static! {
+    static ref GLOBAL_RANDOM: Mutex<kyber_rng::KyberRng> = Mutex::new(kyber_rng::KyberRng::new());
+}
+
 fn main() {
 
-
-    library_loading::load_library("/home/adam/Documents/random/CRandomForRust/src/c_library/rustRng.so");
-    // Now you can use the globally accessible functions 
-    let mut entropy_input: [u8; 48] = [0; 48];
-    for i in 0..48 {
-        entropy_input[i] = i as u8;
-    }
-    
-    unsafe {
-        library_loading::call_randombytes_init(entropy_input.as_mut_ptr(), ptr::null(), 256);
-        let mut buffer = vec![0u8; 10]; // Example buffer
-        library_loading::call_randombytes(buffer.as_mut_ptr(), buffer.len() as u64);
-    }
-   
     println!("Welcome to Kyber Encryption");
         println!("Please enter the security strength, you can always adjust it later.");
         let strength: u32 = helping_functions::helping_functions::get_security_strength();
@@ -66,21 +54,28 @@ fn main() {
         let seed_ptr = seed.as_ptr();
         let ps: u8 = 0; 
         let seed_test: Vec<u8> = [1u8; 48].to_vec();
+        let hex_string = "061550234D158C5EC95595FE04EF7A25767F2E24CC2BC479D09D86DC9ABCFDE7056A8C266F9EF97ED08541DBD2E1FFA1";
+
+        // Convert the hexadecimal string to bytes
+        let bytes = hex::decode(hex_string).expect("Failed to decode hexadecimal string");
+
+        // Create a Vec<u8> from the bytes
+        
         let mut private_key = vec![0u8; kyber.params.kyber_secretkeybytes as usize];
         let mut public_key = vec![0u8; kyber.params.kyber_publickeybytes as usize];
-        let tick_counter = TickCounter::current();
-        let mut kr = crate::kyber_rng::KyberRng::new();
-        kr.randombytes_init(seed_test, None, 256);
+
+        {
+            let mut rng = GLOBAL_RANDOM.lock().unwrap();
+            rng.randombytes_init(bytes, None, 256);
+        }
+        
         let mut x: Vec<u8> = vec![0u8; 48];
         let p = x.len();
-        println!("Some random {:?}", kr.randombytes(&mut x, p as u64));
         kem::kem::crypto_kem_keypair(&mut public_key, &mut private_key).expect("Key pair generation failed");
 
     
         println!("Public Key: {:?}", public_key);
         println!("Private Key: {:?}", private_key);
-        let elapsed_ticks = tick_counter.elapsed();
-println!("Number of elapsed ticks: {}", elapsed_ticks);
 
     //confirmed!
     // Print the generated random bytes
