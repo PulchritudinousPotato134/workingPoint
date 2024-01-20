@@ -1,36 +1,59 @@
 
+
+use std::fs::File;
+use std::io::Write;
+
 use openssl::error::ErrorStack;
 use openssl::symm::{Cipher, Crypter, Mode};
 #[derive(Clone)]
 pub struct AesXofStruct {
     length_remaining: u64,
-    key: [u8; 32],
-    ctr: [u8; 12],
+    key: Vec<u8>,
+    ctr: Vec<u8>,
     buffer_pos: u64,
-    buffer: [u8; 16],
-    v: [u8; 16],
-    reseed_counter: u64,
+    buffer: Vec<u8>,
 }
+
+#[derive(Clone)]
+pub struct AES256_CTR_DRBG_struct {
+    V: Vec<u8>,
+    reseed_counter: u64,
+    Key: Vec<u8>,
+}
+impl AES256_CTR_DRBG_struct 
+{
+    // Initialize the DRBG struct with the appropriate sizes for V and Key
+    pub fn new() -> Self {
+        AES256_CTR_DRBG_struct {
+            V: vec![0u8; 16], // V should be 16 bytes for AES-256
+            Key: vec![0u8; 32], // Key should be 32 bytes for AES-256
+            reseed_counter: 0,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct KyberRng {
-    drbg_ctx: AesXofStruct,
+    drbg_ctx: AES256_CTR_DRBG_struct,
     rng_success: i32,
     rng_bad_maxlen: i32,
     rng_bad_outbuf: i32,
     rng_bad_req_len: i32,
 }
 
+//111111111111111111111111111111111111111111111111
+//1111111111
+//1111111111
+//1111111111
+//1111111111
+//111111111111111111111111111111111111111111111111
 impl KyberRng {
     pub fn new() -> Self {
         KyberRng {
-            drbg_ctx: AesXofStruct {
-                length_remaining: 0,
-                key: [0u8; 32],
-                ctr: [0u8; 12],
-                buffer_pos: 0,
-                buffer: [0u8; 16],
-                v: [0u8; 16],
-                reseed_counter: 0,
+            drbg_ctx: AES256_CTR_DRBG_struct {
+                Key: vec![0u8; 32],
+                V: vec![0u8; 16],
+                reseed_counter: 0
             },
             rng_success: 0,
             rng_bad_maxlen: -1,
@@ -38,197 +61,197 @@ impl KyberRng {
             rng_bad_req_len: -3,
         }
     }
-    pub fn test()
-    {
-        println!("test");
-    }
+    pub fn randombytes_init(&mut self, entropy_input: Vec<u8>, personalization_string: Option<Vec<u8>>, security_strength: u32) {
+        let mut seed_material: Vec<u8> = vec![0; 48];
 
-    pub fn seedexpander_init(&mut self, seed: &[u8; 32], diversifier: &[u8; 8], maxlen: u64) -> i32 {
-        if maxlen >= 0x100000000 {
-            return self.rng_bad_maxlen;
-        }
+        seed_material[..entropy_input.len()].copy_from_slice(&entropy_input);
 
-        self.drbg_ctx.length_remaining = maxlen;
-        self.drbg_ctx.key.copy_from_slice(seed);
-        self.drbg_ctx.ctr[..8].copy_from_slice(diversifier);
-        self.drbg_ctx.ctr[11] = (maxlen % 256) as u8;
-        self.drbg_ctx.ctr[10] = ((maxlen >> 8) % 256) as u8;
-        self.drbg_ctx.ctr[9] = ((maxlen >> 16) % 256) as u8;
-        self.drbg_ctx.ctr[8] = ((maxlen >> 24) % 256) as u8;
-        self.drbg_ctx.ctr[12..].fill(0x00);
-        self.drbg_ctx.buffer_pos = 16;
-        self.drbg_ctx.buffer.fill(0x00);
-
-        self.rng_success
-    }
-
-    pub fn seedexpander(&mut self, x: &mut [u8], xlen: u64) -> i32 {
-        if x.is_empty() {
-            return self.rng_bad_outbuf;
-        }
-        if xlen >= self.drbg_ctx.length_remaining {
-            return self.rng_bad_req_len;
-        }
-
-        self.drbg_ctx.length_remaining -= xlen;
-
-        let mut offset: u64 = 0;
-        let mut remaining = xlen; // Create a mutable local variable for the loop
-
-        while remaining > 0 {
-            let mut ctx = &mut self.drbg_ctx;
-            let buffer_pos_usize = ctx.buffer_pos as usize;
-            let offset_usize = offset as usize;
-            let remaining_usize = remaining as usize;
-
-            if remaining_usize <= 16 - buffer_pos_usize {
-                // Buffer has what we need
-                x[offset_usize..(offset_usize + remaining_usize)]
-                    .copy_from_slice(&ctx.buffer[buffer_pos_usize..(buffer_pos_usize + remaining_usize)]);
-                ctx.buffer_pos += remaining_usize as u64;
-
-                return self.rng_success;
-            }
-
-            // Take what's in the buffer
-            let buffer_available = 16 - ctx.buffer_pos as usize;
-            x[offset_usize..(offset_usize + buffer_available)]
-                .copy_from_slice(&ctx.buffer[ctx.buffer_pos as usize..][..buffer_available]);
-            remaining -= buffer_available as u64;
-            offset += buffer_available as u64;
-
-            KyberRng::aes256_ecb(&mut self.drbg_ctx.key, &mut self.drbg_ctx.ctr, &mut self.drbg_ctx.buffer).expect("TODO: panic message");
-            self.drbg_ctx.buffer_pos = 0;
-
-            // Increment the counter
-            for i in (8..=11).rev() {
-                if self.drbg_ctx.ctr[i as usize] == 0xff {
-                    self.drbg_ctx.ctr[i as usize] = 0x00;
-                } else {
-                    self.drbg_ctx.ctr[i as usize] += 1;
-                    break;
+        if let Some(p_string) = personalization_string {
+            for (i, &val) in p_string.iter().enumerate() {
+                if i < seed_material.len() {
+                    seed_material[i] ^= val;
                 }
             }
         }
 
-        self.rng_success
+        // Set DRBG_ctx.Key to 0x00 for 32 bytes
+        self.drbg_ctx.Key = vec![0; 32];
+
+        // Set DRBG_ctx.V to 0x00 for 16 bytes
+        self.drbg_ctx.V = vec![0; 16];
+
+        Self::AES256_CTR_DRBG_Update(Some(&seed_material), &mut self.drbg_ctx.Key, &mut self.drbg_ctx.V);
+        self.drbg_ctx.reseed_counter = 1;
     }
-  
+
+    pub fn randombytes(&mut self, x: &mut Vec<u8>, mut xlen: u64) -> Result<(), &'static str> {
+        let mut block: Vec<u8> = vec![0; 16];
+        let mut i: usize = 0; // Changed from i32 to usize
+
+        while xlen > 0 {
+            // Increment V
+            for j in (0..=15).rev() {
+                if self.drbg_ctx.V[j] == 0xff {
+                    self.drbg_ctx.V[j] = 0x00;
+                } else {
+                    self.drbg_ctx.V[j] += 1;
+                    break;
+                }
+            }
+
+            Self::aes256_ecb(&self.drbg_ctx.Key, &self.drbg_ctx.V, &mut block);
+
+            if xlen > 15 {
+                let end_index = i + 16;
+                if end_index > x.len() {
+                    return Err("Buffer overflow");
+                }
+                x[i..end_index].copy_from_slice(&block);
+                i += 16;
+                xlen -= 16;
+            } else {
+                let end_index = i + xlen as usize;
+                if end_index > x.len() {
+                    return Err("Buffer overflow");
+                }
+                x[i..end_index].copy_from_slice(&block[..xlen as usize]);
+                xlen = 0;
+            }
+        }
+
+        Self::AES256_CTR_DRBG_Update(None, &mut self.drbg_ctx.Key, &mut self.drbg_ctx.V);
+        self.drbg_ctx.reseed_counter += 1;
+
+
+        Ok(())
+    }
+
+    pub fn AES256_CTR_DRBG_Update(provided_data: Option<&Vec<u8>>, Key: &mut Vec<u8>, V: &mut Vec<u8>) -> Result<(), &'static str> {
+        let mut temp: Vec<u8> = vec![0; 48];
     
-    pub fn aes256_ecb(key: &[u8], ctr: &[u8], buffer: &mut [u8]) -> Result<(), ErrorStack> {
-        let cipher = Cipher::aes_256_ecb();
-        let mode = Mode::Encrypt;
-        print!("Key: {}", key.len());
-        print!(" ctr: {}", ctr.len());
-        print!(" buffer: {}", buffer.len());
-        
-        // Ensure that the input slices have the correct lengths
-        if key.len() != 32 || ctr.len() != 16 || buffer.len() != 16 {
-            return Err(ErrorStack::get()); // Return an empty ErrorStack
+        for i in 0..3 {
+            // Increment V
+            for j in (0..16).rev() {
+                if V[j] == 0xff {
+                    V[j] = 0x00;
+                } else {
+                    V[j] += 1;
+                    break;
+                }
+            }
+    
+            let block_start = i * 16;
+            let block_end = block_start + 16;
+            Self::aes256_ecb(Key, V, &mut temp[block_start..block_end]);
         }
     
-        let mut crypter = Crypter::new(cipher, mode, &key[..16], None)?; // Use the first 16 bytes of the key
+        if let Some(data) = provided_data {
+            for i in 0..48 {
+                temp[i] ^= data[i];
+            }
+        }
+    
+        Key.copy_from_slice(&temp[..32]);
+        V.copy_from_slice(&temp[32..]);
+        Ok(())
+    }
+    
+    pub fn aes256_ecb(key: &[u8], ctr: &[u8], buffer: &mut [u8]) -> Result<(), ErrorStack> {
+        if key.len() != 32 {
+            return Err(ErrorStack::get());
+        }
+    
+        // Log key and ctr
+        let mut file = File::create("rust_key.hex").unwrap();
+        file.write_all(hex::encode(key).as_bytes()).unwrap();
+        let mut file = File::create("rust_ctr.hex").unwrap();
+        file.write_all(hex::encode(ctr).as_bytes()).unwrap();
+    
+        let cipher = Cipher::aes_256_ecb();
+        let mut crypter = Crypter::new(cipher, Mode::Encrypt, key, None)?;
         crypter.pad(false);
     
-        crypter.update(ctr, buffer)?;
+        let mut temp_buffer = vec![0; buffer.len() + cipher.block_size()];
+        let count = crypter.update(ctr, &mut temp_buffer)?;
+        let rest = crypter.finalize(&mut temp_buffer[count..])?;
+        temp_buffer.truncate(count + rest);
     
-        crypter.finalize(buffer)?;
+        buffer.copy_from_slice(&temp_buffer);
+    
+        // Log encrypted buffer
+        let mut file = File::create("rust_encrypted_buffer.hex").unwrap();
+        file.write_all(hex::encode(buffer).as_bytes()).unwrap();
     
         Ok(())
     }
     
-    pub fn randombytes_init(&mut self, entropy_input: &[u8], personalization_string: Option<&[u8]>) {
-        let mut seed_material = [0u8; 48];
-        seed_material[..48].copy_from_slice(&entropy_input[..48]);
+    
 
-        if let Some(ps) = personalization_string {
-            for i in 0..48 {
-                seed_material[i] ^= ps[i];
-            }
-        }
+    fn seedexpander_init(
+        ctx: &mut AesXofStruct,
+        seed: &Vec<u8>,
+        diversifier: &Vec<u8>,
+        maxlen: u32,
+    ) -> Result<(), &'static str> {
+       
 
-        // Temporarily replace key and v with empty arrays
-        let mut temp_key = [0u8; 32];
-        std::mem::swap(&mut temp_key, &mut self.drbg_ctx.key);
-        let mut temp_v = [0u8; 16];
-        std::mem::swap(&mut temp_v, &mut self.drbg_ctx.v);
+        ctx.length_remaining = maxlen as u64;
 
-        self.aes256_ctr_drbg_update(Some(&seed_material[..]), &mut temp_key, &mut temp_v);
+        ctx.key[..32].copy_from_slice(seed);
 
-        // Put the original key and v back
-        std::mem::swap(&mut temp_key, &mut self.drbg_ctx.key);
-        std::mem::swap(&mut temp_v, &mut self.drbg_ctx.v);
+        ctx.ctr[..8].copy_from_slice(&diversifier[..8]);
+        ctx.ctr[11] = (maxlen % 256) as u8;
+        let mut maxlen = maxlen >> 8;
+        ctx.ctr[10] = (maxlen % 256) as u8;
+        let mut maxlen = maxlen >> 8;
+        ctx.ctr[9] = (maxlen % 256) as u8;
+        let mut maxlen = maxlen >> 8;
+        ctx.ctr[8] = (maxlen % 256) as u8;
+        ctx.ctr[12..].fill(0x00);
 
-        self.drbg_ctx.reseed_counter = 1;
+        ctx.buffer_pos = 16;
+        ctx.buffer.fill(0x00);
+
+        Ok(())
     }
 
-    pub fn randombytes(&mut self, x: &mut [u8], mut xlen: u64) -> i32 {
-        let mut block = [0u8; 16];
-        let mut i = 0;
+    fn seedexpander(ctx: &mut AesXofStruct , x: &mut Vec<u8>, mut xlen: usize) -> Result<(), &'static str> {
+        if x.is_empty() {
+            return Err("RNG_BAD_OUTBUF");
+        }
+        if xlen >= ctx.length_remaining as usize {
+            return Err("RNG_BAD_REQ_LEN");
+        }
+
+        ctx.length_remaining -= xlen as u64;
+        let mut offset = 0;
 
         while xlen > 0 {
-            // Increment v
-            for j in (0..=15).rev() {
-                if self.drbg_ctx.v[j] == 0xff {
-                    self.drbg_ctx.v[j] = 0x00;
+            if xlen <= (16 - ctx.buffer_pos as usize) {
+                x[offset..(offset + xlen)].copy_from_slice(&ctx.buffer[ctx.buffer_pos as usize..(ctx.buffer_pos as usize + xlen)]);
+                ctx.buffer_pos += xlen as u64;
+                return Ok(());
+            }
+
+            x[offset..(offset + (16 - ctx.buffer_pos as usize))]
+                .copy_from_slice(&ctx.buffer[ctx.buffer_pos as usize..16]);
+            xlen -= 16 - ctx.buffer_pos as usize;
+            offset += 16 - ctx.buffer_pos as usize;
+
+            Self::aes256_ecb(&mut ctx.key, &mut ctx.ctr, &mut ctx.buffer);
+            ctx.buffer_pos = 0;
+
+            for i in (12..=15).rev() {
+                if ctx.ctr[i] == 0xff {
+                    ctx.ctr[i] = 0x00;
                 } else {
-                    self.drbg_ctx.v[j] += 1;
+                    ctx.ctr[i] += 1;
                     break;
                 }
             }
-
-            KyberRng::aes256_ecb(&self.drbg_ctx.key, &self.drbg_ctx.v, &mut block).expect("AES256 ECB failed");
-
-            let copy_len = std::cmp::min(xlen as usize, 16);
-            x[i..i + copy_len].copy_from_slice(&block[..copy_len]);
-            i += copy_len;
-            xlen = xlen.saturating_sub(copy_len as u64);
         }
 
-        // Temporarily swap out key and v
-        let mut temp_key = [0u8; 32];
-        let mut temp_v = [0u8; 16];
-        std::mem::swap(&mut temp_key, &mut self.drbg_ctx.key);
-        std::mem::swap(&mut temp_v, &mut self.drbg_ctx.v);
-
-        KyberRng::aes256_ctr_drbg_update(self, None, &mut temp_key, &mut temp_v);
-
-        // Swap back key and v
-        std::mem::swap(&mut temp_key, &mut self.drbg_ctx.key);
-        std::mem::swap(&mut temp_v, &mut self.drbg_ctx.v);
-
-        self.drbg_ctx.reseed_counter += 1;
-
-        self.rng_success
-    }
-
-pub fn aes256_ctr_drbg_update(&mut self, provided_data: Option<&[u8]>, key: &mut [u8], v: &mut [u8]) {
-    let mut temp = [0u8; 48];
-
-    for i in 0..3 {
-        // Increment v
-        for j in (0..=15).rev() {
-            if v[j] == 0xff {
-                v[j] = 0x00;
-            } else {
-                v[j] += 1;
-                break;
-            }
-        }
-
-        // Specify the correct range for the 16-byte block based on the iteration
-        let block_start = i * 16;
-        let block_end = block_start + 16;
-        KyberRng::aes256_ecb(key, &v,&mut temp[block_start..block_end])
-            .expect("TODO: panic message");
-    }
-    if let Some(pd) = provided_data {
-        for i in 0..48 {
-            temp[i] ^= pd[i];
-        }
-    }
-    key[..32].copy_from_slice(&temp);
-    v[..16].copy_from_slice(&temp[32..]);
+        Ok(())
 }
 
 }

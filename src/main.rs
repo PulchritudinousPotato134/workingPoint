@@ -6,7 +6,6 @@ use std::io;
 use libloading::{Library, Symbol};
 extern crate  pkg_config;
 mod library_loading;
-mod rng_from_c;
 use std::ptr;
 extern crate lazy_static;
 
@@ -18,6 +17,7 @@ use std::io::{BufRead, Read};
 use std::io::{Write};
 mod kem;
 mod kyber;
+mod rng;
 mod xof_state;
 mod kyber_rng;
 mod speed_print;
@@ -37,6 +37,7 @@ mod reduce;
 mod ntt;
 mod symmetric_shake;
 use tick_counter::TickCounter;
+
 fn main() {
 
 
@@ -64,11 +65,18 @@ fn main() {
 
         let seed_ptr = seed.as_ptr();
         let ps: u8 = 0; 
-
+        let seed_test: Vec<u8> = [1u8; 48].to_vec();
         let mut private_key = vec![0u8; kyber.params.kyber_secretkeybytes as usize];
         let mut public_key = vec![0u8; kyber.params.kyber_publickeybytes as usize];
         let tick_counter = TickCounter::current();
+        let mut kr = crate::kyber_rng::KyberRng::new();
+        kr.randombytes_init(seed_test, None, 256);
+        let mut x: Vec<u8> = vec![0u8; 48];
+        let p = x.len();
+        println!("Some random {:?}", kr.randombytes(&mut x, p as u64));
         kem::kem::crypto_kem_keypair(&mut public_key, &mut private_key).expect("Key pair generation failed");
+
+    
         println!("Public Key: {:?}", public_key);
         println!("Private Key: {:?}", private_key);
         let elapsed_ticks = tick_counter.elapsed();

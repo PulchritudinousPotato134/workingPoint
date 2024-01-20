@@ -17,6 +17,7 @@ lazy_static = "1.4.0"
 sha2 = "0.10.8"
 rand = "0.8.5"
 tick_counter = "0.4.5"
+hex = "0.4.3"
 
 [features]
 default = ["kyber512"] # default features, empty in this case
