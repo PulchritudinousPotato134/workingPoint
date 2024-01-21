@@ -349,6 +349,7 @@ pub mod indcpa
         crate::polyvec::polyvec::polyvec_reduce(&mut pkpv);
     
         pack_sk(sk, &mut skpv);
+        println!("Private Key: {:?}", hex::encode(sk));
         pack_pk(pk, &mut pkpv, &publicseed);
     }
     

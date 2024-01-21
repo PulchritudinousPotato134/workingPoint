@@ -127,10 +127,14 @@ pub mod kem{
                 return Err(());
             }
 
-                {
-                    let mut rng = crate::GLOBAL_RANDOM.lock().unwrap();
-                    rng.randombytes(&mut sk[kyber_i_secret - kyber_sym..].to_vec(), kyber_sym as u64);
-                }
+            {
+                let mut rng = crate::GLOBAL_RANDOM.lock().unwrap();
+                let mut temp_vec = vec![0u8; kyber_sym as usize];
+                rng.randombytes(&mut temp_vec, kyber_sym as u64);
+                sk[kyber_secret - kyber_sym..kyber_secret].copy_from_slice(&temp_vec);
+            }
+            
+            
 
              return Ok(());
 
