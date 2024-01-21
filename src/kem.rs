@@ -151,10 +151,11 @@ pub mod kem{
 
             // Generate random data into buf
 
-           {
-               let mut rng = crate::GLOBAL_RANDOM.lock().unwrap();
-               rng.randombytes(&mut buf[..kyber_symbytes].to_vec(), kyber_symbytes as u64);
-           }
+            {
+                let mut rng = crate::GLOBAL_RANDOM.lock().unwrap();
+                rng.randombytes(&mut buf, kyber_symbytes as u64);
+            }
+
 
             // Hash buf (first half) and store the result in the same buffer
             let mut buf_array_32: [u8; 32] = buf[..32].try_into().expect("Slice with incorrect length");

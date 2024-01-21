@@ -97,7 +97,7 @@ fn main() {
 
 pub fn set_env_vars(params: kyber::KyberParams)
 {
-    kyber_2020senv::set_var("KYBER_K", params.kyber_k.to_string());
+    env::set_var("KYBER_K", params.kyber_k.to_string());
     env::set_var("KYBER_90S", "false");
     env::set_var("KYBER_NAMESPACE", params.kyber_namespace);
     env::set_var("KYBER_N", params.kyber_n.to_string());
