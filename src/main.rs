@@ -55,7 +55,7 @@ fn main() {
         let ps: u8 = 0; 
         let seed_test: Vec<u8> = [1u8; 48].to_vec();
         let hex_string = "061550234D158C5EC95595FE04EF7A25767F2E24CC2BC479D09D86DC9ABCFDE7056A8C266F9EF97ED08541DBD2E1FFA1";
-
+        
 
         let test_bytes = hex::decode(hex_string).expect("Woops, it blew up");
         // Convert the hexadecimal string to bytes
@@ -73,11 +73,23 @@ fn main() {
         
         let mut x: Vec<u8> = vec![0u8; 48];
         let p = x.len();
-        kem::kem::crypto_kem_keypair(&mut public_key, &mut private_key).expect("Key pair generation failed");
-
-    
-        println!("Public Key: {:?}", hex::encode(public_key));
-        println!("Private Key: {:?}", hex::encode(private_key));
+        if let Ok(()) = kem::kem::crypto_kem_keypair(&mut public_key, &mut private_key) {
+            println!("Key pair generated successfully.");
+            
+            // Now that the keys are generated, you can proceed with encryption
+            let mut cc: Vec<u8> = vec![0u8; kyber.params.kyber_ciphertextbytes as usize];
+            let mut ss: Vec<u8> = vec![0u8; kyber.params.kyber_ssbytes as usize];
+            
+            // Use the generated keys for encryption
+            kem::kem::crypto_kem_enc(&mut cc, &mut ss, &mut public_key);
+            
+            println!("Public Key: {:?}", hex::encode(public_key));
+            println!("Private Key: {:?}", hex::encode(private_key));
+            println!("Ciphertext: {:?}", hex::encode(cc));
+            println!("Shared Secret: {:?}", hex::encode(ss));
+        } else {
+            println!("Key pair generation failed.");
+        }
 
     //confirmed!
     // Print the generated random bytes
@@ -85,7 +97,7 @@ fn main() {
 
 pub fn set_env_vars(params: kyber::KyberParams)
 {
-    env::set_var("KYBER_K", params.kyber_k.to_string());
+    kyber_2020senv::set_var("KYBER_K", params.kyber_k.to_string());
     env::set_var("KYBER_90S", "false");
     env::set_var("KYBER_NAMESPACE", params.kyber_namespace);
     env::set_var("KYBER_N", params.kyber_n.to_string());

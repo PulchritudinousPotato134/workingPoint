@@ -140,7 +140,7 @@ pub mod kem{
 
 
             }
-    pub fn crypto_kem_enc( ct: &mut [u8], ss: &mut [u8], pk: &[u8]) -> Result<(), ()> {
+    pub fn crypto_kem_enc( ct: &mut Vec<u8>, ss: &mut Vec<u8>, pk: &mut Vec<u8>) -> Result<(), ()> {
         
             let kyber_symbytes: usize = crate::get_env_var("KYBER_SYMBYTES").unwrap();
 
