@@ -161,12 +161,6 @@ impl KyberRng {
             return Err(ErrorStack::get());
         }
     
-        // Log key and ctr
-        let mut file = File::create("rust_key.hex").unwrap();
-        file.write_all(hex::encode(key).as_bytes()).unwrap();
-        let mut file = File::create("rust_ctr.hex").unwrap();
-        file.write_all(hex::encode(ctr).as_bytes()).unwrap();
-    
         let cipher = Cipher::aes_256_ecb();
         let mut crypter = Crypter::new(cipher, Mode::Encrypt, key, None)?;
         crypter.pad(false);
@@ -178,9 +172,6 @@ impl KyberRng {
     
         buffer.copy_from_slice(&temp_buffer);
     
-        // Log encrypted buffer
-        let mut file = File::create("rust_encrypted_buffer.hex").unwrap();
-        file.write_all(hex::encode(buffer).as_bytes()).unwrap();
     
         Ok(())
     }

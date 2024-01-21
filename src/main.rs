@@ -55,7 +55,7 @@ fn main() {
         let ps: u8 = 0; 
         let seed_test: Vec<u8> = [1u8; 48].to_vec();
         let hex_string = "061550234D158C5EC95595FE04EF7A25767F2E24CC2BC479D09D86DC9ABCFDE7056A8C266F9EF97ED08541DBD2E1FFA1";
-        let hex_string_II:& str = "010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101";
+
 
         let test_bytes = hex::decode(hex_string).expect("Woops, it blew up");
         // Convert the hexadecimal string to bytes
