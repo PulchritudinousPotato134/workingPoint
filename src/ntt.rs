@@ -131,28 +131,40 @@ pub fn ntt(r: &mut Vec<i16>) {
 * Arguments:   - int16_t r[256]: pointer to input/output vector of elements
 *                                of Zq
 **************************************************/
-    pub fn invntt(r: &mut [i16]) {
-        let mut k = 0;
-        let mut t;
-        let mut zeta;
+pub fn invntt(r: &mut [i16]) {
+    let mut k = 0;
+    let mut t;
+    let mut zeta;
+    let mut tempa: i16;
+    let mut tempb: i16;
 
-        for len in 2..=128 {
-            for start in (0..256).step_by(len) {
-                zeta = ZETAS_INV[k];
-                k += 1;
-                for j in start..(start + len) {
+    for len in (2..=128).step_by(2) {
+        for start in (0..256).step_by(len * 2) {
+            zeta = ZETAS_INV[k];
+            k += 1;
+            for j in start..(start + len) {
+                // Check to ensure that j + len does not exceed the bounds of the array
+                if j + len < r.len() {
                     t = r[j];
-                    r[j] = crate::reduce::reduce::barrett_reduce(t + r[j + len]);
+                    tempa = crate::reduce::reduce::barrett_reduce(t + r[j + len]);
+                    r[j] = tempa.clone();
+                    println!("After barrett r[{}] = {}, r[{}] = {}", j, tempa, j + len, r[j + len]);
                     r[j + len] = t - r[j + len];
-                    r[j + len] = fqmul(zeta, r[j + len]);
+                    tempb = fqmul(zeta, r[j + len]);
+                    println!("After fqmul r[{}] = {}", j + len, tempb);
+                    r[j + len] = tempb.clone();
                 }
             }
         }
-
-        for j in 0..256 {
-            r[j] = fqmul(r[j], ZETAS_INV[127]);
-        }
     }
+
+    for j in 0..256 {
+        r[j] = fqmul(r[j], ZETAS_INV[127]);
+    }
+}
+
+
+
     /*************************************************
 * Name:        basemul
 *
