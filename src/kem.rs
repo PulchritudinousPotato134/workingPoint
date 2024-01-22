@@ -75,8 +75,9 @@ mod kyber_2020s {
 
 pub mod kem{
     use std::env;
+    use crate::config::KYBER_CIPHERTEXTBYTES;
     use crate::kem::{HashFunction, kyber_2020s, kyber_90s};
-    use crate::kyber;
+    use crate::{kyber, get_env_var};
     use crate::kyber_rng::KyberRng;
 
 
@@ -143,6 +144,7 @@ pub mod kem{
     pub fn crypto_kem_enc( ct: &mut Vec<u8>, ss: &mut Vec<u8>, pk: &mut Vec<u8>) -> Result<(), ()> {
         
             let kyber_symbytes: usize = crate::get_env_var("KYBER_SYMBYTES").unwrap();
+            let kyber_ciphertextbytes:usize = crate::get_env_var("KYBER_CIPHERTEXTBYTES").unwrap();
 
             let hash_function = selected_hash_function();
 
@@ -177,9 +179,12 @@ pub mod kem{
             crate::indcpa::indcpa::indcpa_enc(ct, &buf, pk, &kr[kyber_symbytes..]);
 
             // Overwrite coins in kr with H(c)
-            kr.resize(32, 0); // Resize kr to 32 bytes for hash_h
-            let kr_array_32: &mut [u8; 32] = kr.as_mut_slice().try_into().expect("Slice with incorrect length");
-            hash_function.hash_h(kr_array_32, ct);
+            let mut hash_output: [u8; 32] = [0; 32];
+            hash_function.hash_h(&mut hash_output, ct);
+            
+            // Copy the hash result back into `kr` starting at KYBER_SYMBYTES
+            kr[kyber_symbytes..kyber_symbytes + 32].copy_from_slice(&hash_output);
+            
 
             // Hash concatenation of pre-k and H(c) to k
             if ss.len() < 32 {
