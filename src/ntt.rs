@@ -135,27 +135,22 @@ pub fn invntt(r: &mut [i16]) {
     let mut k = 0;
     let mut t;
     let mut zeta;
-    let mut tempa: i16;
-    let mut tempb: i16;
 
-    for len in (2..=128).step_by(2) {
+    let mut len = 2;
+    while len <= 128 {
         for start in (0..256).step_by(len * 2) {
             zeta = ZETAS_INV[k];
             k += 1;
             for j in start..(start + len) {
-                // Check to ensure that j + len does not exceed the bounds of the array
                 if j + len < r.len() {
                     t = r[j];
-                    tempa = crate::reduce::reduce::barrett_reduce(t + r[j + len]);
-                    r[j] = tempa.clone();
-                    println!("After barrett r[{}] = {}, r[{}] = {}", j, tempa, j + len, r[j + len]);
+                    r[j] = crate::reduce::reduce::barrett_reduce(t + r[j + len]);
                     r[j + len] = t - r[j + len];
-                    tempb = fqmul(zeta, r[j + len]);
-                    println!("After fqmul r[{}] = {}", j + len, tempb);
-                    r[j + len] = tempb.clone();
+                    r[j + len] = fqmul(zeta, r[j + len]);
                 }
             }
         }
+        len *= 2; // Double len at the end of the outer loop
     }
 
     for j in 0..256 {
