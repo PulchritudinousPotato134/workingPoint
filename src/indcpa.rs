@@ -406,14 +406,12 @@ pub mod indcpa
             for i in 0..kyber_k {
                 let mut temp_bp = polyvec_struct::PolyVec::new();
                 crate::polyvec::polyvec::polyvec_pointwise_acc_montgomery(&mut temp_bp.vec[i as usize], &at[i as usize], &sp);
-                crate::polyvec::polyvec::polyvec_add(&mut bp, &temp_bp, &ep);
+                bp.vec[i as usize] = temp_bp.vec[i as usize].clone();
             }
 
             let mut temp_v = poly_struct::PolyStruct::new();
             crate::polyvec::polyvec::polyvec_pointwise_acc_montgomery(&mut temp_v, &pkpv, &sp);
-            let temp_bp_ii = bp.clone();
-            crate::polyvec::polyvec::polyvec_add(&mut bp, & temp_bp_ii, &ep);
-            v = temp_v;
+            v.coeffs = temp_v.coeffs.clone();
 
             crate::polyvec::polyvec::polyvec_invntt_tomont(&mut bp);
             poly::poly::poly_invntt_tomont(&mut v);
