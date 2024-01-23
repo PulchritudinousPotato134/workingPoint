@@ -79,14 +79,27 @@ fn main() {
             // Now that the keys are generated, you can proceed with encryption
             let mut cc: Vec<u8> = vec![0u8; kyber.params.kyber_ciphertextbytes as usize];
             let mut ss: Vec<u8> = vec![0u8; kyber.params.kyber_ssbytes as usize];
-            
+            let mut ss1: Vec<u8> = vec![0u8; kyber.params.kyber_ssbytes as usize];
             // Use the generated keys for encryption
-            kem::kem::crypto_kem_enc(&mut cc, &mut ss, &mut public_key);
+            if let Ok(()) = kem::kem::crypto_kem_enc(&mut cc, &mut ss, &mut public_key)
+            {
+                println!("Encryption Completed");
+                println!("Public Key: {:?}", hex::encode(public_key));
+                println!("Private Key: {:?}", hex::encode(private_key.clone()));
+                println!("Ciphertext: {:?}", hex::encode(cc.clone()));
+                println!("Shared Secret: {:?}", hex::encode(ss));
+
+                if let Ok(()) = kem::kem::crypto_kem_dec(&mut ss1, &mut cc, &mut private_key)
+                {
+                    println!("Decryption Completed");
+                    println!("Shared Secret From Decryption: {:?}", hex::encode(ss1));
+                }
+                else {
+                    println!("Decryption Failed");
+                }
+            }
             
-            println!("Public Key: {:?}", hex::encode(public_key));
-            println!("Private Key: {:?}", hex::encode(private_key));
-            println!("Ciphertext: {:?}", hex::encode(cc));
-            println!("Shared Secret: {:?}", hex::encode(ss));
+           
         } else {
             println!("Key pair generation failed.");
         }

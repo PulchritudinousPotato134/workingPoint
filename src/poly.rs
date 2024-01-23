@@ -58,37 +58,32 @@ pub mod poly
 *              - const uint8_t *a: pointer to input byte array
 *                                  (of length KYBER_POLYCOMPRESSEDBYTES bytes)
 **************************************************/
-    pub fn poly_decompress(r: &mut crate::poly_struct::PolyStruct, mut a: &[u8]) {
-        let kyber_polycompressedbytes: u32 = crate::get_env_var("KYBER_POLYCOMPRESSEDBYTES").unwrap();
-        let kyber_n: u32 = crate::get_env_var("KYBER_N").unwrap();
-        let kyber_q: u32 = crate::get_env_var("KYBER_Q").unwrap();
-            if kyber_polycompressedbytes == 128 {
-                for i in 0..kyber_n / 2 {
-                    r.coeffs[(2 * i + 0) as usize] = ((((a[0] & 15) * kyber_q as u8) + 8) >> 4) as i16;
-                    r.coeffs[(2 * i + 1) as usize] = ((((a[0] >> 4)  * kyber_q as u8) + 8) >> 4) as i16;
-                    a = &a[1..];
-                }
-            } else if kyber_polycompressedbytes == 160 {
-                for i in 0..kyber_n / 8 {
-                    let mut t: [u8; 8] = [0; 8];
+pub fn poly_decompress(r: &mut crate::poly_struct::PolyStruct, mut a: &[u8]) {
+    let kyber_polycompressedbytes: u32 = crate::get_env_var("KYBER_POLYCOMPRESSEDBYTES").unwrap();
+    let kyber_n: u32 = crate::get_env_var("KYBER_N").unwrap();
+    let kyber_q: u32 = crate::get_env_var("KYBER_Q").unwrap();
 
-                    t[0] = a[0] >> 0;
-                    t[1] = (a[0] >> 5) | (a[1] << 3);
-                    t[2] = a[1] >> 2;
-                    t[3] = (a[1] >> 7) | (a[2] << 1);
-                    t[4] = (a[2] >> 4) | (a[3] << 4);
-                    t[5] = a[3] >> 1;
-                    t[6] = (a[3] >> 6) | (a[4] << 2);
-                    t[7] = a[4] >> 3;
-                    a = &a[5..];
+    if kyber_polycompressedbytes == 128 {
+        for i in 0..kyber_n / 2 {
+            // Debug print statements to check values
+            println!("a[0]: {}", a[0]);
+            println!("kyber_q: {}", kyber_q);
 
-                    for j in 0..8 {
-                        r.coeffs[(8 * i + j) as usize] = ((((t[j as usize] & 31) as u32 * kyber_q) + 16) >> 5) as i16;
-                    }
-                }
-            }
-        
+            // Calculate the value to be assigned to r.coeffs
+            let value = ((((a[0] & 15) as u32 * kyber_q) + 8) >> 4) as i16;
+            
+            // Debug print the value
+            println!("Value to assign to r.coeffs: {}", value);
+
+            r.coeffs[(2 * i + 0) as usize] = value;
+            a = &a[1..];
+        }
+    } else if kyber_polycompressedbytes == 160 {
+        // Similar adjustments for the 160-byte case
+        // ...
     }
+}
+
 
 
     /*************************************************
