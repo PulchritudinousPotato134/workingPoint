@@ -218,7 +218,12 @@ pub mod kem{
             let mut cmp = vec![0u8; kyber_cipher];
             let pk = &sk[kyber_i_secret..];
 
-            // Call the indcpa_dec function
+
+            // Create a mutable reference to the entire vector as &[u8; 64]
+            let mut kr_whole: &mut [u8; 64] = kr.as_mut_slice().try_into().expect("Slice with incorrect length");
+
+
+                        // Call the indcpa_dec function
             crate::indcpa::indcpa::indcpa_dec(&mut buf, ct, sk);
 
             // Multitarget countermeasure for coins + contributory KEM
@@ -226,44 +231,40 @@ pub mod kem{
                 buf[kyber_symbytes + i] = sk[kyber_secret - 2 * kyber_symbytes + i];
             }
 
-            kr.resize(64, 0);
-            let mut kr_array_64: &mut [u8; 64] = kr.as_mut_slice().try_into().expect("Slice with incorrect length");
 
             // Hash buf and store the result in kr
-            hash_function.hash_g(&mut kr_array_64, &buf);
+            hash_function.hash_g(&mut kr_whole, &buf);
 
-            // Overwrite coins in kr with the hash of ct
-            // Ensure `kr` has the correct size for `hash_h`
-            kr.resize(32, 0); // Resize to fit the expected size for hash_h
+            // Create arrays with non-constant values
+            let mut kr_half1_array: [u8; 32] = Default::default();
+            let mut kr_half2_array: [u8; 32] = Default::default();
 
-            // Create a fixed-size array slice from kr for hash_h
-            let kr_array: &mut [u8; 32] = {
-                // Make sure kr has at least 32 elements
-                assert!(kr.len() >= 32);
-                // This will create a fixed-size array reference
-                // to the first 32 elements of kr
-                let ptr = kr.as_mut_ptr() as *mut [u8; 32];
-                unsafe { &mut *ptr }
-            };
+            // Create mutable references to the arrays
+            let kr_half1: &mut [u8; 32] = &mut kr_half1_array;
+            let kr_half2: &mut [u8; 32] = &mut kr_half2_array;
 
-            // Now you can call hash_h with kr_array
-            hash_function.hash_h(kr_array, ct);
-
+            // Copy elements from kr_whole into kr_half1 and kr_half2
+            kr_half1.copy_from_slice(&kr_whole[..32]);
+            kr_half2.copy_from_slice(&kr_whole[32..]);
+            
             // coins are in kr+kyber_symbytes
-            crate::indcpa::indcpa::indcpa_enc(&mut cmp, &buf, pk, &kr[kyber_symbytes..]);
+            crate::indcpa::indcpa::indcpa_enc(&mut cmp, &buf, pk, kr_half2);
+
 
             // Verify ct and cmp
             let fail = crate::verify::verify::verify(ct, &cmp, kyber_cipher);
 
             // Overwrite coins in kr with the hash of ct
-            kr.resize(32, 0); // Resize kr to 32 bytes for hash_h
-            let kr_array_32: &mut [u8; 32] = kr.as_mut_slice().try_into().expect("Slice with incorrect length");
-            hash_function.hash_h(kr_array_32, ct);
+            hash_function.hash_h(kr_half2, ct);
+
 
             // Conditionally overwrite pre-k with z on re-encryption failure
-            let mut kr_ii = kr_array_32.clone();
             let fail_u8 = if fail != 0 { 1 } else { 0 };
-            crate::verify::verify::cmov(&mut kr_ii, &sk[kyber_secret - kyber_symbytes..], kyber_symbytes, fail_u8);
+
+            for (i, &val) in kr_half2.iter().enumerate() {
+                kr_whole[i + kyber_symbytes] = val;
+            }
+            crate::verify::verify::cmov(kr_whole, &sk[kyber_secret - kyber_symbytes..], kyber_symbytes, fail_u8);
 
             // Hash concatenation of pre-k and H(c) to k
 
@@ -279,7 +280,7 @@ pub mod kem{
             };
 
             // Hash concatenation of pre-k and H(c) to k
-            hash_function.kdf(ss_array_32, kr_array_32);
+            hash_function.kdf(ss_array_32, kr_whole);
 
         Ok(())
     }
