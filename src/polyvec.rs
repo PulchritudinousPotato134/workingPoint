@@ -226,9 +226,10 @@ pub mod polyvec
                 let mut t = crate::poly_struct::PolyStruct::new();
                 crate::poly::poly::poly_basemul_montgomery(&mut t, &a.vec[i as usize], &b.vec[i as usize]);
                 crate::poly::poly::poly_add(&mut result, r, &t); // Accumulate the result in `result`
+                *r = result.clone(); 
             }
 
-            *r = result; // Assign the accumulated result to `*r`
+            
             crate::poly::poly::poly_reduce(r);
         
     }
