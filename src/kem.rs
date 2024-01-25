@@ -188,7 +188,6 @@ pub mod kem{
 
             // Hash concatenation of pre-k and H(c) to k
             if ss.len() < 32 {
-                // Handle error: ss is not long enough
                 return Err(());
             }
 

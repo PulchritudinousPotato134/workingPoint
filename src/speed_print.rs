@@ -1,5 +1,6 @@
 pub mod speed_print
 {
+    //THIS IS TRANSLATED BUT NOT USED CURRENTLY
     use std::cmp::Ordering;
 
     pub fn cmp_uint64(a: &u64, b: &u64) -> Ordering {
@@ -31,9 +32,8 @@ pub mod speed_print
         }
 
         if overhead == u64::MAX {
-            // Assuming there's a function `cpucycles_overhead()` to get the overhead.
-            // You should replace this with the actual implementation.
-            overhead = 0;//cpucycles_overhead();
+            
+            overhead = 0;
         }
 
         let tlen = tlen - 1;

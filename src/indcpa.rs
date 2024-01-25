@@ -460,11 +460,11 @@ pub mod indcpa
         crate::polyvec::polyvec::polyvec_pointwise_acc_montgomery(&mut mp, &skpv, &bp);
         poly::poly::poly_invntt_tomont(&mut mp);
 
-        let mut result = poly_struct::PolyStruct::new();  // Create a new variable to store the result
-        poly::poly::poly_sub(&mut result, &v, &mp);  // Store the result of the subtraction in 'result'
+        let mut result = poly_struct::PolyStruct::new();  
+        poly::poly::poly_sub(&mut result, &v, &mp);  
         poly::poly::poly_reduce(&mut result);
 
-        poly::poly::poly_tomsg(m, &mut result);  // Use 'result' instead of 'mp'
+        poly::poly::poly_tomsg(m, &mut result);  
     }
 
 

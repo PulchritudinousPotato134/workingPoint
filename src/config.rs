@@ -1,3 +1,5 @@
+//NOT IN USE ATM, CONSIDERING INCLUDING LATER AS ALTERNATE VARIABLE SHARING
+
 /// The security level of Kyber
 ///
 /// Defaults to 3 (kyber768), will be 2 or 4 respectively when

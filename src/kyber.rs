@@ -259,17 +259,13 @@ impl Kyber {
 
     pub fn encrypt(&self, plaintext: &[u8]) -> Result<Vec<u8>, i32> 
     {
-        // Implement the encryption logic here
-        // You can use self.params to access the Kyber parameters
-        // Return the ciphertext or an error
+
         Err(-1)
     }
 
     pub fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, i32> 
     {
-        // Implement the decryption logic here
-        // You can use self.params to access the Kyber parameters
-        // Return the plaintext or an error
+
         Err(-1)
     }
 

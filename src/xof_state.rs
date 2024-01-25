@@ -20,7 +20,6 @@ impl XofAbsorb for Aes256CtrCtx {
     }
 
     fn new() -> Self {
-        // Initialization for Aes256CtrCtx
         Aes256CtrCtx {
             sk_exp: [0u64; 120],
             ivw: [0u32; 16],
@@ -39,7 +38,6 @@ impl XofAbsorb for KeccakState {
     }
 
     fn new() -> Self {
-        // Initialization for KeccakState
         KeccakState {
             s:[0u64; 25],
         }

@@ -25,8 +25,8 @@ impl AES256_CTR_DRBG_struct
     // Initialize the DRBG struct with the appropriate sizes for V and Key
     pub fn new() -> Self {
         AES256_CTR_DRBG_struct {
-            V: vec![0u8; 16], // V should be 16 bytes for AES-256
-            Key: vec![0u8; 32], // Key should be 32 bytes for AES-256
+            V: vec![0u8; 16], 
+            Key: vec![0u8; 32],
             reseed_counter: 0,
         }
     }
@@ -41,12 +41,6 @@ pub struct KyberRng {
     rng_bad_req_len: i32,
 }
 
-//111111111111111111111111111111111111111111111111
-//1111111111
-//1111111111
-//1111111111
-//1111111111
-//111111111111111111111111111111111111111111111111
 impl KyberRng {
     pub fn new() -> Self {
         KyberRng {
@@ -74,10 +68,10 @@ impl KyberRng {
             }
         }
 
-        // Set DRBG_ctx.Key to 0x00 for 32 bytes
+        
         self.drbg_ctx.Key = vec![0; 32];
 
-        // Set DRBG_ctx.V to 0x00 for 16 bytes
+     
         self.drbg_ctx.V = vec![0; 16];
 
         Self::AES256_CTR_DRBG_Update(Some(&seed_material), &mut self.drbg_ctx.Key, &mut self.drbg_ctx.V);
@@ -86,10 +80,9 @@ impl KyberRng {
 
     pub fn randombytes(&mut self, x: &mut Vec<u8>, mut xlen: u64) -> Result<(), &'static str> {
         let mut block: Vec<u8> = vec![0; 16];
-        let mut i: usize = 0; // Changed from i32 to usize
+        let mut i: usize = 0; 
 
         while xlen > 0 {
-            // Increment V
             for j in (0..=15).rev() {
                 if self.drbg_ctx.V[j] == 0xff {
                     self.drbg_ctx.V[j] = 0x00;

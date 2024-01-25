@@ -533,7 +533,7 @@ pub mod aes256ctr {
         ivw_copy[11] = (cc + 2).to_be();
         ivw_copy[15] = (cc + 3).to_be();
 
-        let mut data_ptr = 0;  // Initialize a pointer to iterate through data
+        let mut data_ptr = 0;  
 
         while len > 64 {
             aes_ctr4x(&mut data[data_ptr..(data_ptr + 64)], &mut ivw_copy, sk_exp);
@@ -573,7 +573,7 @@ pub mod aes256ctr {
     }
 
     pub fn aes256ctr_squeezeblocks(out: &mut [u8], nblocks: usize, s: &mut crate::xof_state::Aes256CtrCtx) {
-        let mut out_ptr = 0;  // Initialize a pointer to iterate through 'out'
+        let mut out_ptr = 0;  
 
         for _ in 0..nblocks {
             aes_ctr4x(&mut out[out_ptr..(out_ptr + 64)], &mut s.ivw, &s.sk_exp);
